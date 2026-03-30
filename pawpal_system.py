@@ -1,13 +1,14 @@
 # "logic layer" where all your backend classes live
 
 class Task:
-    def __init__(self, name, category, duration, priority, preferred_time):
+    def __init__(self, name, category, duration, priority, preferred_time, pet_name=""):
         """Create a new Task with a name, category, duration, priority, and preferred time."""
         self.name = name                    # e.g. "Morning walk"
         self.category = category            # e.g. "exercise", "feeding", "medication"
         self.duration = duration            # in minutes
         self.priority = priority            # "low", "medium", or "high"
         self.preferred_time = preferred_time  # e.g. "morning", "afternoon", "evening"
+        self.pet_name = pet_name            # snapshot of the pet's name at creation time
         self.completed = False
 
     def mark_complete(self):
@@ -24,6 +25,7 @@ class Task:
     def to_dict(self):
         """Return task data as a plain dictionary (useful for display/export)."""
         return {
+            "pet": self.pet_name,
             "name": self.name,
             "category": self.category,
             "duration": self.duration,
