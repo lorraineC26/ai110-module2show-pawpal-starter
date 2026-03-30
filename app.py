@@ -48,21 +48,15 @@ species = st.selectbox("Species", ["dog", "cat", "other"])
 if "owner" not in st.session_state:
     st.session_state.owner = Owner(owner_name, time_available=120, preferences={"prefer_morning": True})
 
-if "pet" not in st.session_state:
-    st.session_state.pet = Pet(pet_name, species, age=3, health_notes="")
-    st.session_state.owner.add_pet(st.session_state.pet)
-
 if "scheduler" not in st.session_state:
     st.session_state.scheduler = Scheduler(st.session_state.owner)
 
 if "schedule_stale" not in st.session_state:
     st.session_state.schedule_stale = False
 
-# Sync widget values to existing objects on every rerun
 st.session_state.owner.name = owner_name
-st.session_state.pet.name = pet_name
-st.session_state.pet.species = species
 
+# --- Tasks section ---
 st.markdown("### Tasks")
 st.caption("Add a few tasks. These feed into the scheduler.")
 
@@ -79,27 +73,32 @@ with col5:
     task_time = st.text_input("Scheduled time", value="08:00")
 
 if st.button("Add task"):
+    # Find existing pet by name, or create one automatically
+    existing_pet = next((p for p in st.session_state.owner.pets if p.name == pet_name), None)
+    if existing_pet is None:
+        existing_pet = Pet(pet_name, species, age=3, health_notes="")
+        st.session_state.owner.add_pet(existing_pet)
     new_task = Task(
         name=task_title,
         category="general",
         duration=int(duration),
         priority=priority,
         preferred_time=preferred_time,
-        pet_name=st.session_state.pet.name,
+        pet_name=pet_name,
         time=task_time,
     )
-    prospective = st.session_state.pet.tasks + [new_task]
+    prospective = st.session_state.owner.tasks + [new_task]
     conflicts = st.session_state.scheduler.detect_conflicts(prospective)
     new_task_conflicts = [c for c in conflicts if new_task.name in c]
     if new_task_conflicts:
         for conflict in new_task_conflicts:
             st.warning(f"Scheduling conflict detected — {conflict.replace('WARNING: ', '')}. Task was not added.")
     else:
-        st.session_state.pet.add_task(new_task)
+        existing_pet.add_task(new_task)
         st.session_state.schedule_stale = True
         st.success(f"Added: {new_task.name} at {task_time} ({priority} priority, {duration} min)")
 
-current_tasks = st.session_state.pet.tasks
+current_tasks = st.session_state.owner.tasks
 if current_tasks:
     scheduler = st.session_state.scheduler
 
@@ -114,10 +113,12 @@ if current_tasks:
 
     if sorted_tasks:
         st.caption(f"Showing {len(sorted_tasks)} of {len(current_tasks)} task(s) · sorted by scheduled time · edit duration/priority inline · check to complete · 🗑 to delete")
+        task_by_id = {id(t): t for t in sorted_tasks}
         rows = [
             {
-                "_idx": current_tasks.index(t),
+                "_id": id(t),
                 "Scheduled Time": t.time,
+                "Pet": t.pet_name,
                 "Task": t.name,
                 "Duration (min)": t.duration,
                 "Priority": t.priority,
@@ -129,30 +130,33 @@ if current_tasks:
         edited = st.data_editor(
             rows,
             column_config={
-                "_idx": None,
+                "_id": None,
                 "Completed": st.column_config.CheckboxColumn("Completed"),
                 "Duration (min)": st.column_config.NumberColumn("Duration (min)", min_value=1, max_value=240, step=1),
                 "Priority": st.column_config.SelectboxColumn("Priority", options=["low", "medium", "high"]),
             },
-            disabled=["Scheduled Time", "Task", "Time of Day"],
+            disabled=["Scheduled Time", "Pet", "Task", "Time of Day"],
             hide_index=True,
             num_rows="dynamic",
             use_container_width=True,
         )
 
-        # Sync edits and deletions back to pet.tasks
-        edited_indices = {row["_idx"] for row in edited}
-        deleted_indices = {row["_idx"] for row in rows} - edited_indices
+        # Sync edits and deletions back to the correct pet
+        edited_ids = {row["_id"] for row in edited}
+        deleted_ids = set(task_by_id.keys()) - edited_ids
         changed = False
 
-        if deleted_indices:
-            st.session_state.pet.tasks = [
-                t for i, t in enumerate(current_tasks) if i not in deleted_indices
-            ]
+        if deleted_ids:
+            for tid in deleted_ids:
+                task = task_by_id[tid]
+                for pet in st.session_state.owner.pets:
+                    pet.remove_task(task.name)
             changed = True
 
         for row in edited:
-            task = current_tasks[row["_idx"]]
+            task = task_by_id.get(row["_id"])
+            if task is None:
+                continue
             new_duration = int(row["Duration (min)"] or task.duration)
             new_priority = row["Priority"] or task.priority
             if task.duration != new_duration or task.priority != new_priority or task.completed != row["Completed"]:
@@ -166,7 +170,7 @@ if current_tasks:
     else:
         st.info("No tasks match the selected filter.")
 else:
-    st.info("No tasks yet. Add one above.")
+    st.info("No tasks yet. Add at least one pet and task above.")
 
 st.divider()
 
@@ -176,7 +180,7 @@ if st.session_state.schedule_stale:
     st.info("Your tasks have changed. Regenerate the schedule to get the latest version.")
 
 if st.button("Generate schedule"):
-    if not st.session_state.pet.tasks:
+    if not st.session_state.owner.tasks:
         st.warning("Add at least one task before generating a schedule.")
     else:
         scheduler = st.session_state.scheduler
@@ -184,11 +188,12 @@ if st.button("Generate schedule"):
         st.session_state.schedule_stale = False
 
         # Summary banner
+        pet_names = ", ".join(p.name for p in st.session_state.owner.pets)
         time_budget = st.session_state.owner.time_available
         time_used = schedule.total_duration
         time_left = time_budget - time_used
         st.success(
-            f"Schedule built for {st.session_state.pet.name}! "
+            f"Schedule built for {pet_names}! "
             f"{time_used} min scheduled out of {time_budget} min available "
             f"({time_left} min free)."
         )

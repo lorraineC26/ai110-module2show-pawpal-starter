@@ -27,8 +27,8 @@ classDiagram
         +String name
         +int time_available
         +dict preferences
-        +Pet pet
-        +List tasks
+        +List pets
+        +tasks : property
         +add_pet(pet)
         +get_summary()
     }
@@ -80,9 +80,9 @@ classDiagram
         +explain_plan()
     }
 
-    Owner "1" --> "1" Pet : has
+    Owner "1" --> "*" Pet : has
     Pet "1" --> "*" Task : owns
-    Owner ..> Pet : tasks synced via add_pet()
+    Owner ..> Task : tasks aggregated via property
     Scheduler --> Owner : uses
     Scheduler --> Schedule : produces
 ```

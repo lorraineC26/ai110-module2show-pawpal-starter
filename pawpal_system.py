@@ -108,22 +108,25 @@ class Owner:
         self.name = name
         self.time_available = time_available  # total minutes available today
         self.preferences = preferences        # dict, e.g. {"prefer_morning": True}
-        self.pet = None                       # Owner "1" --> "1" Pet
-        self.tasks = []                       # flat list kept in sync with pet tasks
+        self.pets = []                        # Owner "1" --> "*" Pet
+
+    @property
+    def tasks(self):
+        """Return a flat list of all tasks across every pet."""
+        return [task for pet in self.pets for task in pet.tasks]
 
     def add_pet(self, pet):
-        """Assign a pet to this owner and sync the task list."""
-        self.pet = pet
-        self.tasks = pet.tasks  # shared reference — changes to pet.tasks reflect here
+        """Add a pet to this owner's list."""
+        self.pets.append(pet)
 
     def get_summary(self):
-        """Return a human-readable summary of the owner, their pet, and tasks."""
-        pet_info = self.pet.get_profile() if self.pet else "No pet assigned"
+        """Return a human-readable summary of the owner, their pets, and tasks."""
+        pet_info = [p.get_profile() for p in self.pets] if self.pets else "No pets assigned"
         return {
             "owner": self.name,
             "time_available_minutes": self.time_available,
             "preferences": self.preferences,
-            "pet": pet_info,
+            "pets": pet_info,
             "total_tasks": len(self.tasks),
         }
 
@@ -193,8 +196,8 @@ class Scheduler:
         3. Recording a reason for each included (or excluded) task.
         Returns a Schedule object.
         """
-        if not self.owner.pet:
-            raise ValueError("Owner has no pet assigned.")
+        if not self.owner.pets:
+            raise ValueError("Owner has no pets assigned.")
 
         all_tasks = self.owner.tasks
         time_budget = self.owner.time_available

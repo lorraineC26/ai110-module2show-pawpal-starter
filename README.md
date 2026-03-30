@@ -1,5 +1,27 @@
 # PawPal+ (Module 2 Project)
 
+## Features
+
+**Priority-based greedy scheduling** — `Scheduler.generate_schedule()` sorts all tasks by a three-key comparator: priority tier (high → medium → low), then preferred time slot (morning → afternoon → evening → any), then duration (shorter tasks break ties). It then walks the sorted list once and greedily accepts each task only if it fits within the owner's remaining time budget, recording an inclusion or exclusion reason for every task.
+
+**Chronological sort** — `Scheduler.sort_by_time(tasks)` orders tasks by their `HH:MM` scheduled-time attribute using Python's built-in lexicographic string sort. Zero-padded `HH:MM` strings compare correctly without any parsing or conversion.
+
+**Multi-criteria filter** — `Scheduler.filter_tasks(tasks, completed, pet_name)` composes up to two independent predicates: one for completion status (`True` / `False` / `None` for all) and one for pet name. Each active predicate is applied as a list comprehension in sequence, so either, both, or neither filter can be omitted.
+
+**Scheduling conflict detection** — `Scheduler.detect_conflicts(tasks)` uses a `collections.defaultdict` to bucket tasks by their `time` value. Any bucket with two or more tasks produces a `WARNING` string that names every conflicting task (with its pet's name when present). The method always returns a list and never raises, so the UI can surface warnings without interrupting the user's workflow.
+
+**Recurring task generation** — `Task.mark_complete()` marks the current task done and, for tasks with `recurrence="daily"` or `recurrence="weekly"`, returns a new `Task` instance with the same attributes but `due_date` advanced by `timedelta(days=1)` or `timedelta(weeks=1)` and `completed` reset to `False`. Non-recurring tasks return `None`.
+
+---
+
+## 📸 Demo
+
+![PawPal+ app screenshot](public/demo_screenshot.png)
+
+> **Note:** Replace `public/demo_screenshot.png` with an actual screenshot of your running Streamlit app (`streamlit run app.py`), then remove this note.
+
+---
+
 You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
 
 ## Scenario
