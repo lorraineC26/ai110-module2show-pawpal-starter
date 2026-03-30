@@ -34,6 +34,42 @@ The `Scheduler` class has been extended with three features beyond basic plan ge
 
 **Recurring tasks** — `Task` now accepts a `recurrence` field (`"daily"` or `"weekly"`). When `mark_complete()` is called on a recurring task, it returns a new `Task` instance due on the next occurrence, calculated with Python's `timedelta`. Non-recurring tasks return `None`.
 
+## Testing PawPal+
+
+### Run the test suite
+
+```bash
+python3.9 -m pytest tests/test_pawpal.py -v
+```
+
+Or, if your environment has `pytest` on the default `python`:
+
+```bash
+python -m pytest tests/test_pawpal.py -v
+```
+
+### What the tests cover
+
+| Area | What is verified |
+|---|---|
+| **Task completion** | `mark_complete()` flips `completed` to `True` |
+| **Pet task list** | `add_task()` increases the pet's task count |
+| **Sorting** | `sort_by_time()` returns tasks in chronological `HH:MM` order; handles already-sorted lists and ties without crashing |
+| **Recurrence — daily** | Completing a daily task returns a new task due the next calendar day with all attributes preserved and `completed = False` |
+| **Recurrence — weekly** | Completing a weekly task returns a new task due seven days later |
+| **Recurrence — none** | Completing a non-recurring task returns `None` |
+| **Conflict detection** | Flags two or more tasks at the same time with a `WARNING` string; returns `[]` when no overlaps exist; handles multiple conflicting slots; includes pet names in the warning message |
+
+13 tests, 0 failures.
+
+### Confidence Level
+
+★★★★☆ (4 / 5)
+
+The core scheduling behaviors — sorting, recurrence, and conflict detection — are fully tested and all pass. One star is held back because the tests cover the logic layer only; the Streamlit UI (`app.py`) and the `generate_schedule` time-budget enforcement are not yet covered by automated tests, so end-to-end reliability has not been verified.
+
+---
+
 ## Getting started
 
 ### Setup
