@@ -5,6 +5,8 @@ class Owner:
         self.name = name
         self.time_available = time_available
         self.preferences = preferences
+        self.pet = None       # Owner "1" --> "1" Pet
+        self.tasks = []       # Owner "1" --> "*" Task
 
     def add_pet(self, pet):
         pass
