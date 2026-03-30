@@ -1,7 +1,10 @@
 # "logic layer" where all your backend classes live
 
+from datetime import date, timedelta
+
 class Task:
-    def __init__(self, name, category, duration, priority, preferred_time, pet_name="", time="00:00"):
+    def __init__(self, name, category, duration, priority, preferred_time, pet_name="", time="00:00",
+                 recurrence=None, due_date=None):
         """Create a new Task with a name, category, duration, priority, and preferred time."""
         self.name = name                    # e.g. "Morning walk"
         self.category = category            # e.g. "exercise", "feeding", "medication"
@@ -10,11 +13,36 @@ class Task:
         self.preferred_time = preferred_time  # e.g. "morning", "afternoon", "evening"
         self.pet_name = pet_name            # snapshot of the pet's name at creation time
         self.time = time                    # scheduled time in "HH:MM" format
+        self.recurrence = recurrence        # "daily", "weekly", or None
+        self.due_date = due_date or date.today().isoformat()  # "YYYY-MM-DD"
         self.completed = False
 
     def mark_complete(self):
-        """Mark this task as completed."""
+        """Mark this task as completed.
+
+        If the task recurs daily or weekly, returns a new Task scheduled for the
+        next occurrence. Returns None for non-recurring tasks.
+        """
         self.completed = True
+
+        if self.recurrence == "daily":
+            next_date = date.fromisoformat(self.due_date) + timedelta(days=1)
+        elif self.recurrence == "weekly":
+            next_date = date.fromisoformat(self.due_date) + timedelta(weeks=1)
+        else:
+            return None
+
+        return Task(
+            name=self.name,
+            category=self.category,
+            duration=self.duration,
+            priority=self.priority,
+            preferred_time=self.preferred_time,
+            pet_name=self.pet_name,
+            time=self.time,
+            recurrence=self.recurrence,
+            due_date=next_date.isoformat(),
+        )
 
     def edit(self, field, value):
         """Update a field on the task by name."""
