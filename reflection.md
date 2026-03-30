@@ -26,7 +26,9 @@ classDiagram
     class Owner {
         +String name
         +int time_available
-        +String preferences
+        +dict preferences
+        +Pet pet
+        +List tasks
         +add_pet(pet)
         +get_summary()
     }
@@ -36,6 +38,9 @@ classDiagram
         +String species
         +int age
         +String health_notes
+        +List tasks
+        +add_task(task)
+        +remove_task(task_name)
         +get_profile()
     }
 
@@ -45,6 +50,12 @@ classDiagram
         +int duration
         +String priority
         +String preferred_time
+        +String pet_name
+        +String time
+        +String recurrence
+        +String due_date
+        +bool completed
+        +mark_complete()
         +edit(field, value)
         +to_dict()
     }
@@ -53,19 +64,25 @@ classDiagram
         +String date
         +List tasks
         +int total_duration
-        +String reasoning
+        +dict reasoning
         +display()
         +get_reasoning()
+        +to_dict_list()
     }
 
     class Scheduler {
         +Owner owner
+        +Schedule schedule
         +generate_schedule()
+        +sort_by_time(tasks)
+        +filter_tasks(tasks, completed, pet_name)
+        +detect_conflicts(tasks)
         +explain_plan()
     }
 
     Owner "1" --> "1" Pet : has
-    Owner "1" --> "*" Task : manages
+    Pet "1" --> "*" Task : owns
+    Owner ..> Pet : tasks synced via add_pet()
     Scheduler --> Owner : uses
     Scheduler --> Schedule : produces
 ```
